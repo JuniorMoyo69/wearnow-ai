@@ -54,34 +54,17 @@ const generateHint    = $('generateHint');
 const resultsModal    = $('resultsModal');
 const resultsRow      = $('resultsRow');
 const modalClose      = $('modalClose');
-const shareBtn        = $('shareBtn');
 const downloadBtn     = $('downloadBtn');
 const tryAgainBtn     = $('tryAgainBtn');
 
-const galleryGrid     = $('galleryGrid');
-const galleryEmpty    = $('galleryEmpty');
-const studioSection   = $('section-studio');
-const gallerySection  = $('section-gallery');
+const progressArea    = $('progressArea');
+const progressFill    = $('progressFill');
+const progressPct     = $('progressPct');
+const progressLabel   = $('progressLabel');
+const progressEta     = $('progressEta');
 
 const toast           = $('toast');
 const toastMsg        = $('toastMsg');
-
-// ── NAVIGATION ─────────────────────────────────
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    switchSection(btn.dataset.section);
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-
-$('goToStudio')?.addEventListener('click', () => switchSection('studio'));
-
-function switchSection(name) {
-  studioSection.classList.toggle('hidden', name !== 'studio');
-  gallerySection.classList.toggle('hidden', name !== 'gallery');
-  if (name === 'gallery') loadGallery();
-}
 
 // ── UPLOAD HELPERS ─────────────────────────────
 function setupDropZone({ zone, input, inner, preview, previewImg, removeBtn, key }) {
@@ -142,7 +125,7 @@ setupDropZone({ zone: personZone,   input: personInput,   inner: personInner,   
 generateBtn.addEventListener('click', async () => {
   if (!state.clothingFile || !state.personFile) return;
 
-  setLoading(true);
+  startProgress();
 
   try {
     const form = new FormData();
@@ -156,25 +139,81 @@ generateBtn.addEventListener('click', async () => {
     if (!res.ok) throw new Error(data.error || 'Generation failed');
 
     state.lastEntry = data.entry;
-    showToast(data.message);
-    openModal(data.entry);
+    finishProgress(() => {
+      generateHint.textContent = 'Ready! Click Generate to create your AI look';
+      showToast(data.message);
+      openModal(data.entry);
+    });
 
   } catch (err) {
-    showToast('Error: ' + err.message);
+    finishProgress(() => {
+      generateHint.textContent = 'Upload both photos to continue';
+      showToast('Error: ' + err.message);
+    });
     console.error(err);
-  } finally {
-    setLoading(false);
   }
 });
 
-function setLoading(on) {
-  generateBtn.disabled = on;
-  btnText.classList.toggle('hidden', on);
-  btnSpinner.classList.toggle('hidden', !on);
-  generateHint.textContent = on
-    ? 'Analyzing your photos and generating your look…'
-    : (state.clothingFile && state.personFile ? 'Ready! Click Generate to create your AI look' : 'Upload both photos to continue');
+// ── PROGRESS ANIMATION ─────────────────────────
+const PROGRESS_STAGES = [
+  { threshold: 0,  label: 'Uploading your photos…' },
+  { threshold: 25, label: 'Analyzing clothing item…' },
+  { threshold: 48, label: 'Fitting outfit to your photo…' },
+  { threshold: 68, label: 'Refining AI details…' },
+  { threshold: 85, label: 'Final touches…' },
+  { threshold: 95, label: 'Almost ready…' },
+];
+
+let _progressTimer = null;
+let _progressValue = 0;
+let _startTime = 0;
+
+function setProgressUI(pct) {
+  const rounded = Math.round(pct);
+  progressFill.style.width = pct + '%';
+  progressPct.textContent  = rounded + '%';
+
+  const stage = [...PROGRESS_STAGES].reverse().find(s => pct >= s.threshold);
+  if (stage) progressLabel.textContent = stage.label;
+
+  const elapsed = (Date.now() - _startTime) / 1000;
+  const rate    = pct > 0 ? elapsed / pct : 0;
+  const remaining = Math.max(0, Math.round(rate * (100 - pct)));
+  progressEta.textContent = pct >= 100
+    ? 'Done!'
+    : remaining > 0
+      ? `~${remaining}s remaining`
+      : 'Estimated ~30 seconds';
 }
+
+function startProgress() {
+  _progressValue = 0;
+  _startTime     = Date.now();
+  progressArea.classList.remove('hidden');
+  generateBtn.classList.add('hidden');
+  generateHint.classList.add('hidden');
+  setProgressUI(0);
+
+  _progressTimer = setInterval(() => {
+    const gap = 95 - _progressValue;
+    _progressValue += Math.max(gap * 0.03, 0.08);
+    if (_progressValue >= 95) { _progressValue = 95; }
+    setProgressUI(_progressValue);
+  }, 300);
+}
+
+function finishProgress(callback) {
+  clearInterval(_progressTimer);
+  _progressValue = 100;
+  setProgressUI(100);
+  setTimeout(() => {
+    progressArea.classList.add('hidden');
+    generateBtn.classList.remove('hidden');
+    generateHint.classList.remove('hidden');
+    if (callback) callback();
+  }, 600);
+}
+
 
 // ── MODAL ──────────────────────────────────────
 function openModal(entry) {
@@ -188,15 +227,7 @@ function openModal(entry) {
       </div>`;
 
   resultsRow.innerHTML = `
-    <div class="result-col">
-      <div class="result-label">Your Photo</div>
-      <div class="result-frame"><img src="${entry.userPhoto}" alt="You" /></div>
-    </div>
-    <div class="result-col">
-      <div class="result-label">Clothing</div>
-      <div class="result-frame"><img src="${entry.clothingPhoto}" alt="Clothing" /></div>
-    </div>
-    <div class="result-col">
+    <div class="result-col result-col-single">
       <div class="result-label">AI Try-On Result</div>
       <div class="result-frame">${genFrame}</div>
     </div>
@@ -212,13 +243,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 function closeModal() { resultsModal.classList.add('hidden'); }
 
-shareBtn.addEventListener('click', () => {
-  closeModal();
-  switchSection('gallery');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.section === 'gallery'));
-  showToast('Shared to gallery!');
-});
-
 downloadBtn.addEventListener('click', () => {
   if (!state.lastEntry?.generatedImage) return;
   downloadImage(state.lastEntry.generatedImage, 'wearnowai-look.png');
@@ -229,51 +253,6 @@ tryAgainBtn.addEventListener('click', () => {
   clearFile('clothingFile', clothingInput, clothingInner, clothingPreview, clothingZone);
   clearFile('personFile', personInput, personInner, personPreview, personZone);
 });
-
-// ── GALLERY ────────────────────────────────────
-async function loadGallery() {
-  try {
-    const res = await fetch('/api/gallery');
-    const entries = await res.json();
-
-    if (!entries.length) {
-      galleryGrid.innerHTML = '';
-      galleryEmpty.classList.remove('hidden');
-      return;
-    }
-
-    galleryEmpty.classList.add('hidden');
-    galleryGrid.innerHTML = entries.map(e => {
-      const hasAI = !!e.generatedImage;
-      const time = relativeTime(e.timestamp);
-      return `
-        <div class="gallery-card">
-          <div class="gallery-images">
-            <div class="gallery-img-cell">
-              <img src="${e.userPhoto}" alt="User" loading="lazy" />
-              <div class="cell-label">Photo</div>
-            </div>
-            <div class="gallery-img-cell">
-              ${hasAI
-                ? `<img src="${e.generatedImage}" alt="AI Look" loading="lazy" />`
-                : `<div class="gallery-img-placeholder">🤖</div>`}
-              <div class="cell-label">${hasAI ? 'AI Look' : 'Clothing'}</div>
-            </div>
-          </div>
-          <div class="gallery-card-info">
-            <div class="gallery-name">${escHtml(e.userName)}</div>
-            <div class="gallery-meta">
-              <span class="gallery-time">${time}</span>
-              ${hasAI ? '<span class="gallery-ai-badge">AI Generated</span>' : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  } catch (err) {
-    galleryGrid.innerHTML = `<p style="color:#999;padding:24px">Could not load gallery.</p>`;
-  }
-}
 
 // ── UTILITIES ──────────────────────────────────
 function relativeTime(iso) {
@@ -307,3 +286,53 @@ async function downloadImage(url, filename) {
 
 // ── START ──────────────────────────────────────
 updateBtn();
+
+// ── SCROLL ANIMATIONS ──────────────────────────
+(function () {
+  const groups = [
+    { sel: '#clothingCard',  delay: 0    },
+    { sel: '.plus-divider',  delay: 0.08 },
+    { sel: '#personCard',    delay: 0.16 },
+    { sel: '.generate-area', delay: 0    },
+    { sel: '.feature-item',  delay: 0, stagger: 0.08 },
+    { sel: '.site-footer',   delay: 0    },
+  ];
+
+  groups.forEach(({ sel, delay, stagger = 0 }) => {
+    document.querySelectorAll(sel).forEach((el, i) => {
+      el.classList.add('scroll-reveal');
+      el.style.transitionDelay = (delay + i * stagger) + 's';
+    });
+  });
+
+  // Track scroll direction
+  let scrollDir = 'down';
+  let lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    scrollDir = window.scrollY > lastY ? 'down' : 'up';
+    lastY = window.scrollY;
+  }, { passive: true });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const el = entry.target;
+      if (entry.isIntersecting) {
+        // Set starting position without transition, then animate in
+        el.style.transition = 'none';
+        el.classList.remove('in-view', 'from-above');
+        if (scrollDir === 'up') el.classList.add('from-above');
+        void el.offsetHeight; // force reflow so browser registers start state
+        el.style.transition = '';
+        el.classList.add('in-view');
+      } else {
+        // Reset instantly (off-screen, user won't see the jump)
+        el.style.transition = 'none';
+        el.classList.remove('in-view', 'from-above');
+        void el.offsetHeight;
+        el.style.transition = '';
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+
+  document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+})();

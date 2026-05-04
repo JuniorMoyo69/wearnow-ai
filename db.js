@@ -1,10 +1,8 @@
 const { Pool } = require('pg');
 
-// Strip ?sslmode=... from the URL so the pool-level ssl config takes full control.
-// Newer pg versions treat sslmode=require/prefer/verify-ca as verify-full, which
-// conflicts with rejectUnauthorized: false and breaks Neon connections on Render.
+// Strip all query params — SSL is configured via pool-level ssl option below.
 const connectionString = process.env.DATABASE_URL
-  ? process.env.DATABASE_URL.replace(/[?&]sslmode=[^&]*/g, '').replace(/\?$/, '').replace(/&$/, '')
+  ? process.env.DATABASE_URL.replace(/\?.*$/, '')
   : undefined;
 
 const pool = new Pool({
