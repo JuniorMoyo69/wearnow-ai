@@ -248,13 +248,6 @@ app.post('/api/generate', requireAuth, upload.fields([
   }
 });
 
-// ── DELETE gallery entry ──────────────────────
-app.delete('/api/gallery/:id', requireAuth, async (req, res) => {
-  const row = await db.deleteGalleryEntry(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Not found' });
-  res.json({ success: true });
-});
-
 // ── Helper ────────────────────────────────────
 function downloadToBuffer(url) {
   return new Promise((resolve, reject) => {

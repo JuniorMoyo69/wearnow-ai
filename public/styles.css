@@ -858,28 +858,6 @@ body {
   color: var(--black);
 }
 
-.results-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  margin-bottom: 28px;
-}
-
-.result-col { display: flex; flex-direction: column; gap: 8px; }
-
-.result-col-single {
-  max-width: 420px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.result-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--light);
-}
 
 .result-frame {
   border-radius: var(--radius-sm);
@@ -1333,8 +1311,6 @@ body {
   font-weight: 600;
   font-style: normal;
 }
-
-.footer-powered { font-size: 12px; opacity: 0.75; margin-top: 4px; }
 
 /* ── SCROLLBAR ───────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }

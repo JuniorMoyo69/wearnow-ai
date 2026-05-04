@@ -62,11 +62,6 @@ async function createUser({ username, email, password }) {
 
 // ── Gallery ───────────────────────────────────
 
-async function getGallery() {
-  const { rows } = await pool.query('SELECT * FROM gallery ORDER BY timestamp DESC');
-  return rows;
-}
-
 async function createGalleryEntry({ userId, userName, userPhoto, clothingPhoto, generatedImage, aiEnabled }) {
   const { rows } = await pool.query(
     `INSERT INTO gallery (user_id, user_name, user_photo, clothing_photo, generated_image, ai_enabled)
@@ -89,4 +84,4 @@ async function deleteGalleryEntry(id) {
   return rows[0] || null;
 }
 
-module.exports = { init, findUserByEmail, findUserById, createUser, getGallery, createGalleryEntry, getUserHistory, deleteGalleryEntry };
+module.exports = { init, findUserByEmail, findUserById, createUser, createGalleryEntry, getUserHistory, deleteGalleryEntry };

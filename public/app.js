@@ -47,7 +47,6 @@ const removePerson    = $('removePerson');
 
 const userNameInput   = $('userName');
 const generateBtn     = $('generateBtn');
-const btnText         = $('btnText');
 const generateHint    = $('generateHint');
 
 const resultsModal    = $('resultsModal');
@@ -479,10 +478,6 @@ function relativeTime(iso) {
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return new Date(iso).toLocaleDateString();
-}
-
-function escHtml(str) {
-  return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 let toastTimer;
