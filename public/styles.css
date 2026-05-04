@@ -1134,21 +1134,6 @@ body {
 .lightbox-close:hover { background: rgba(255,255,255,0.22); }
 
 /* ── MODAL ACTION BUTTONS ────────────────────── */
-.btn-regenerate {
-  padding: 11px 18px;
-  background: var(--white);
-  color: var(--black);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font: 600 14px 'Inter', sans-serif;
-  cursor: pointer;
-  transition: var(--ease);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.btn-regenerate:hover { border-color: var(--purple); color: var(--purple); background: rgba(124,58,237,0.04); }
-
 .btn-share {
   padding: 11px 18px;
   background: var(--white);
@@ -1414,7 +1399,7 @@ body {
   .modal-title { font-size: 19px; }
   .modal-actions { flex-direction: column; align-items: stretch; }
   .btn-again { margin-left: 0; text-align: center; padding: 10px; }
-  .btn-share, .btn-download, .btn-regenerate { justify-content: center; }
+  .btn-share, .btn-download { justify-content: center; }
 
   /* History */
   .history-section { padding: 36px 12px 56px; }

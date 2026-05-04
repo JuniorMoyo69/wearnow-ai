@@ -54,7 +54,6 @@ const resultsModal    = $('resultsModal');
 const modalClose      = $('modalClose');
 const downloadBtn     = $('downloadBtn');
 const tryAgainBtn     = $('tryAgainBtn');
-const regenerateBtn   = $('regenerateBtn');
 const shareBtn        = $('shareBtn');
 const tabResult       = $('tabResult');
 const tabCompare      = $('tabCompare');
@@ -407,11 +406,6 @@ shareBtn.addEventListener('click', async () => {
   } catch {
     window.open(url, '_blank');
   }
-});
-
-regenerateBtn.addEventListener('click', () => {
-  closeModal();
-  runGenerate();
 });
 
 tryAgainBtn.addEventListener('click', () => {
