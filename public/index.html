@@ -34,6 +34,7 @@
       </div>
       <nav class="header-nav">
         <button class="nav-btn active" data-section="studio">Studio</button>
+        <button class="nav-btn" data-section="history">My Looks</button>
       </nav>
       <div class="header-user">
 <div class="user-avatar" id="userAvatar"></div>
@@ -92,7 +93,19 @@
             <h2>Clothing Photo</h2>
             <p>Flat lay, hanger, or worn — any angle works</p>
           </div>
+          <button class="tips-toggle" data-target="clothingTips" title="Photo tips">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            Tips
+          </button>
         </div>
+        <div class="tips-panel hidden" id="clothingTips">
+          <div class="tip-item">✅ Flat lay, on hanger, or worn — all work great</div>
+          <div class="tip-item">✅ Make sure the full garment is visible</div>
+          <div class="tip-item">✅ Clean or plain background preferred</div>
+          <div class="tip-item">✅ Good lighting, avoid heavy shadows</div>
+          <div class="tip-item">❌ Avoid blurry or heavily compressed photos</div>
+        </div>
+        <div class="photo-warning hidden" id="clothingWarning"></div>
         <div class="drop-zone" id="clothingZone">
           <input type="file" id="clothingInput" accept="image/*" hidden />
           <div class="drop-inner" id="clothingInner">
@@ -131,7 +144,19 @@
             <h2>Your Photo</h2>
             <p>Full-body or portrait — clear photo works best</p>
           </div>
+          <button class="tips-toggle" data-target="personTips" title="Photo tips">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            Tips
+          </button>
         </div>
+        <div class="tips-panel hidden" id="personTips">
+          <div class="tip-item">✅ Face the camera directly, front-facing</div>
+          <div class="tip-item">✅ Full body or at least waist-up works best</div>
+          <div class="tip-item">✅ Good natural lighting, plain background</div>
+          <div class="tip-item">✅ Wear fitted clothing for best fit accuracy</div>
+          <div class="tip-item">❌ Avoid selfies with arm raised or heavy filters</div>
+        </div>
+        <div class="photo-warning hidden" id="personWarning"></div>
         <div class="drop-zone" id="personZone">
           <input type="file" id="personInput" accept="image/*" hidden />
           <div class="drop-inner" id="personInner">
@@ -217,19 +242,79 @@
         <h2 class="modal-title">Your Virtual Try-On</h2>
       </div>
 
-      <div class="results-row" id="resultsRow">
-        <!-- filled by JS -->
+      <!-- View tabs -->
+      <div class="result-tabs">
+        <button class="result-tab active" id="tabResult">Result</button>
+        <button class="result-tab" id="tabCompare">Before / After</button>
+      </div>
+
+      <!-- Result view -->
+      <div class="result-view" id="resultView">
+        <div class="result-frame-wrap">
+          <div class="result-frame" id="resultFrame"><!-- filled by JS --></div>
+          <button class="zoom-btn" id="zoomBtn" title="Zoom in">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Before/After slider view -->
+      <div class="result-view hidden" id="compareView">
+        <div class="compare-wrap" id="compareWrap">
+          <img class="compare-img" id="compareAfterImg" alt="AI Result" />
+          <div class="compare-before-clip" id="compareBeforeClip">
+            <img class="compare-img" id="compareBeforeImg" alt="Original" />
+          </div>
+          <div class="compare-handle" id="compareHandle">
+            <div class="compare-handle-line"></div>
+            <div class="compare-handle-circle">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12H3M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg>
+            </div>
+          </div>
+          <div class="compare-label-left">Before</div>
+          <div class="compare-label-right">After</div>
+        </div>
       </div>
 
       <div class="modal-actions">
+        <button class="btn-regenerate" id="regenerateBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          Regenerate
+        </button>
+        <button class="btn-share" id="shareBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          Share
+        </button>
         <button class="btn-download" id="downloadBtn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-          Download Photo
+          Download
         </button>
         <button class="btn-again" id="tryAgainBtn">Try another look →</button>
       </div>
     </div>
   </div>
+
+  <!-- ZOOM LIGHTBOX -->
+  <div class="lightbox hidden" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <img class="lightbox-img" id="lightboxImg" alt="Zoomed result" />
+  </div>
+
+  <!-- MY LOOKS HISTORY SECTION -->
+  <section class="history-section hidden" id="section-history">
+    <div class="history-header">
+      <h2>My Looks</h2>
+      <p>Your personal AI try-on history</p>
+    </div>
+    <div class="history-grid" id="historyGrid"></div>
+    <div class="history-empty hidden" id="historyEmpty">
+      <div class="history-empty-icon">👗</div>
+      <p>No looks yet — generate your first AI outfit!</p>
+      <button class="btn-primary" id="goToStudioBtn">Go to Studio</button>
+    </div>
+  </section>
 
   <!-- TOAST -->
   <div class="toast hidden" id="toast"><span id="toastMsg"></span></div>

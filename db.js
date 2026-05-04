@@ -22,6 +22,7 @@ async function init() {
 
     CREATE TABLE IF NOT EXISTS gallery (
       id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id         UUID,
       user_name       VARCHAR(255),
       user_photo      TEXT,
       clothing_photo  TEXT,
@@ -29,6 +30,13 @@ async function init() {
       timestamp       TIMESTAMPTZ DEFAULT NOW(),
       ai_enabled      BOOLEAN DEFAULT FALSE
     );
+  `);
+  // Add user_id and indexes to existing tables if not already present
+  await pool.query(`
+    ALTER TABLE gallery ADD COLUMN IF NOT EXISTS user_id UUID;
+    CREATE INDEX IF NOT EXISTS idx_users_email   ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_gallery_user  ON gallery(user_id);
+    CREATE INDEX IF NOT EXISTS idx_gallery_time  ON gallery(timestamp DESC);
   `);
 }
 
@@ -59,13 +67,21 @@ async function getGallery() {
   return rows;
 }
 
-async function createGalleryEntry({ userName, userPhoto, clothingPhoto, generatedImage, aiEnabled }) {
+async function createGalleryEntry({ userId, userName, userPhoto, clothingPhoto, generatedImage, aiEnabled }) {
   const { rows } = await pool.query(
-    `INSERT INTO gallery (user_name, user_photo, clothing_photo, generated_image, ai_enabled)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [userName, userPhoto, clothingPhoto, generatedImage ?? null, aiEnabled]
+    `INSERT INTO gallery (user_id, user_name, user_photo, clothing_photo, generated_image, ai_enabled)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [userId ?? null, userName, userPhoto, clothingPhoto, generatedImage ?? null, aiEnabled]
   );
   return rows[0];
+}
+
+async function getUserHistory(userId) {
+  const { rows } = await pool.query(
+    'SELECT * FROM gallery WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 50',
+    [userId]
+  );
+  return rows;
 }
 
 async function deleteGalleryEntry(id) {
@@ -73,4 +89,4 @@ async function deleteGalleryEntry(id) {
   return rows[0] || null;
 }
 
-module.exports = { init, findUserByEmail, findUserById, createUser, getGallery, createGalleryEntry, deleteGalleryEntry };
+module.exports = { init, findUserByEmail, findUserById, createUser, getGallery, createGalleryEntry, getUserHistory, deleteGalleryEntry };

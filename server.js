@@ -25,7 +25,7 @@ db.init()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`\n✨ WearNow.ai running at http://localhost:${PORT}`);
-      console.log(`🤖 AI generation: ${replicate ? 'ENABLED' : 'DISABLED — add REPLICATE_API_KEY to .env'}\n`);
+      console.log(`🤖 AI generation: ${process.env.REPLICATE_API_KEY ? 'ENABLED' : 'DISABLED — add REPLICATE_API_KEY to .env'}\n`);
     });
   })
   .catch(err => {
@@ -161,10 +161,15 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
-// ── GALLERY ───────────────────────────────────
-app.get('/api/gallery', async (req, res) => {
-  const rows = await db.getGallery();
-  res.json(rows.map(toEntry));
+// ── HISTORY (per-user) ────────────────────────
+app.get('/api/history', requireAuth, async (req, res) => {
+  try {
+    const rows = await db.getUserHistory(req.session.userId);
+    res.json(rows.map(toEntry));
+  } catch (err) {
+    console.error('History error:', err.message);
+    res.status(500).json({ error: 'Could not load history.' });
+  }
 });
 
 // ── GENERATE ─────────────────────────────────
@@ -187,6 +192,7 @@ app.post('/api/generate', requireAuth, upload.fields([
 
     if (!replicate) {
       const row = await db.createGalleryEntry({
+        userId:         req.session.userId,
         userName,
         userPhoto:      userUpload.secure_url,
         clothingPhoto:  clothingUpload.secure_url,
@@ -226,6 +232,7 @@ app.post('/api/generate', requireAuth, upload.fields([
     const genUpload = await uploadToCloudinary(genBuffer);
 
     const row = await db.createGalleryEntry({
+      userId:         req.session.userId,
       userName,
       userPhoto:      userUpload.secure_url,
       clothingPhoto:  clothingUpload.secure_url,
