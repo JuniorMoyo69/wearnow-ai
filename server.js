@@ -1,0 +1,261 @@
+require('dotenv').config();
+const express   = require('express');
+const multer    = require('multer');
+const https     = require('https');
+const http      = require('http');
+const cors      = require('cors');
+const session   = require('express-session');
+const bcrypt    = require('bcryptjs');
+const { v2: cloudinary } = require('cloudinary');
+const Replicate = require('replicate');
+const db        = require('./db');
+
+// ── Cloudinary config ─────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const app  = express();
+const PORT = process.env.PORT || 3000;
+
+// ── Init DB tables then start server ──────────
+db.init()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`\n✨ WearNow.ai running at http://localhost:${PORT}`);
+      console.log(`🤖 AI generation: ${replicate ? 'ENABLED' : 'DISABLED — add REPLICATE_API_KEY to .env'}\n`);
+    });
+  })
+  .catch(err => {
+    console.error('Database init failed:', err.message);
+    process.exit(1);
+  });
+
+// ── Middleware ────────────────────────────────
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(session({
+  secret:            process.env.SESSION_SECRET || 'wearnowai-dev-secret-change-in-production',
+  resave:            false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    maxAge:   7 * 24 * 60 * 60 * 1000,
+    sameSite: 'lax',
+    secure:   process.env.NODE_ENV === 'production'
+  }
+}));
+app.use(express.static('public'));
+
+// ── Multer (memory — files go straight to Cloudinary) ──
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files allowed'));
+  }
+});
+
+// ── Replicate client ──────────────────────────
+const replicate = process.env.REPLICATE_API_KEY
+  ? new Replicate({ auth: process.env.REPLICATE_API_KEY })
+  : null;
+
+// ── Cloudinary upload helper ──────────────────
+function uploadToCloudinary(buffer, options = {}) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: 'wearnow', ...options },
+      (err, result) => err ? reject(err) : resolve(result)
+    ).end(buffer);
+  });
+}
+
+// ── Map DB row → frontend shape ───────────────
+function toEntry(row) {
+  return {
+    id:             row.id,
+    userName:       row.user_name,
+    userPhoto:      row.user_photo,
+    clothingPhoto:  row.clothing_photo,
+    generatedImage: row.generated_image,
+    timestamp:      row.timestamp,
+    aiEnabled:      row.ai_enabled
+  };
+}
+
+// ── Auth middleware ───────────────────────────
+function requireAuth(req, res, next) {
+  if (req.session.userId) return next();
+  res.status(401).json({ error: 'Please sign in to continue.' });
+}
+
+// ── AUTH ROUTES ───────────────────────────────
+
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password)
+    return res.status(400).json({ error: 'All fields are required.' });
+  if (username.trim().length < 2)
+    return res.status(400).json({ error: 'Display name must be at least 2 characters.' });
+  if (password.length < 6)
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+
+  try {
+    const existing = await db.findUserByEmail(email.toLowerCase().trim());
+    if (existing)
+      return res.status(400).json({ error: 'An account with that email already exists.' });
+
+    const hash = await bcrypt.hash(password, 12);
+    const user = await db.createUser({
+      username: username.trim(),
+      email:    email.toLowerCase().trim(),
+      password: hash
+    });
+
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    res.json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
+  } catch (err) {
+    console.error('Register error:', err.message);
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: 'Email and password are required.' });
+
+  try {
+    const user = await db.findUserByEmail(email.toLowerCase().trim());
+    if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Invalid email or password.' });
+
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    res.json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
+  } catch (err) {
+    console.error('Login error:', err.message);
+    res.status(500).json({ error: 'Login failed. Please try again.' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy(() => res.json({ success: true }));
+});
+
+app.get('/api/auth/me', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated.' });
+  try {
+    const user = await db.findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'User not found.' });
+    res.json({ user: { id: user.id, email: user.email, username: user.username } });
+  } catch {
+    res.status(401).json({ error: 'Not authenticated.' });
+  }
+});
+
+// ── GALLERY ───────────────────────────────────
+app.get('/api/gallery', async (req, res) => {
+  const rows = await db.getGallery();
+  res.json(rows.map(toEntry));
+});
+
+// ── GENERATE ─────────────────────────────────
+app.post('/api/generate', requireAuth, upload.fields([
+  { name: 'clothingPhoto', maxCount: 1 },
+  { name: 'userPhoto',     maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const clothingFile = req.files?.clothingPhoto?.[0];
+    const userFile     = req.files?.userPhoto?.[0];
+    const userName     = req.session.username || (req.body.userName || 'Anonymous').trim();
+
+    if (!clothingFile) return res.status(400).json({ error: 'Clothing photo is required' });
+    if (!userFile)     return res.status(400).json({ error: 'Your photo is required' });
+
+    const [userUpload, clothingUpload] = await Promise.all([
+      uploadToCloudinary(userFile.buffer),
+      uploadToCloudinary(clothingFile.buffer)
+    ]);
+
+    if (!replicate) {
+      const row = await db.createGalleryEntry({
+        userName,
+        userPhoto:      userUpload.secure_url,
+        clothingPhoto:  clothingUpload.secure_url,
+        generatedImage: null,
+        aiEnabled:      false
+      });
+      return res.json({ success: true, entry: toEntry(row), message: 'Add REPLICATE_API_KEY to .env to enable AI generation.' });
+    }
+
+    const output = await replicate.run(
+      'cuuupid/idm-vton:0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985',
+      {
+        input: {
+          human_img:       userUpload.secure_url,
+          garm_img:        clothingUpload.secure_url,
+          garment_des:     'clothing item',
+          is_checked:      true,
+          is_checked_crop: false,
+          denoise_steps:   35,
+          seed:            42
+        }
+      }
+    );
+
+    const firstOutput = Array.isArray(output) ? output[0] : output;
+    let genBuffer;
+
+    if (firstOutput && typeof firstOutput.blob === 'function') {
+      const blob = await firstOutput.blob();
+      genBuffer  = Buffer.from(await blob.arrayBuffer());
+    } else {
+      const url = typeof firstOutput === 'string' ? firstOutput
+        : (typeof firstOutput?.url === 'function' ? String(await firstOutput.url()) : String(firstOutput));
+      genBuffer = await downloadToBuffer(url);
+    }
+
+    const genUpload = await uploadToCloudinary(genBuffer);
+
+    const row = await db.createGalleryEntry({
+      userName,
+      userPhoto:      userUpload.secure_url,
+      clothingPhoto:  clothingUpload.secure_url,
+      generatedImage: genUpload.secure_url,
+      aiEnabled:      true
+    });
+
+    res.json({ success: true, entry: toEntry(row), message: 'Virtual try-on generated!' });
+
+  } catch (err) {
+    console.error('Generate error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Generation failed' });
+  }
+});
+
+// ── DELETE gallery entry ──────────────────────
+app.delete('/api/gallery/:id', requireAuth, async (req, res) => {
+  const row = await db.deleteGalleryEntry(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  res.json({ success: true });
+});
+
+// ── Helper ────────────────────────────────────
+function downloadToBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+    const chunks   = [];
+    protocol.get(url, res => {
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end',  ()    => resolve(Buffer.concat(chunks)));
+    }).on('error', reject);
+  });
+}

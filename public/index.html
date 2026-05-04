@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WearNowai — AI Virtual Try-On</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <img src="logo.png" alt="WearNowai" class="logo-img" />
+        <div class="header-brand">
+          <span class="brand-name">WearNow<span class="brand-accent">.ai</span></span>
+          <span class="brand-by">made by Vuyo</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <button class="nav-btn active" data-section="studio">Studio</button>
+        <button class="nav-btn" data-section="gallery">Gallery</button>
+      </nav>
+      <div class="header-user">
+        <div class="header-badge">Beta</div>
+        <div class="user-avatar" id="userAvatar"></div>
+        <span class="user-name" id="userName_header"></span>
+        <button class="btn-logout" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- STUDIO SECTION -->
+  <section id="section-studio">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-glow hero-glow-1"></div>
+      <div class="hero-glow hero-glow-2"></div>
+      <div class="hero-content">
+        <div class="hero-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+          AI-Powered Virtual Try-On
+        </div>
+        <h1>Try on any outfit<br /><span class="hero-gradient">before you buy it</span></h1>
+        <p>Upload any clothing item and a photo of yourself — our AI generates a realistic photo of you wearing it in seconds.</p>
+        <div class="hero-steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <span>Upload clothing</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <span>Add your photo</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <span>Get your AI look</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOAD AREA -->
+    <div class="upload-layout">
+
+      <!-- Clothing Upload -->
+      <div class="upload-card" id="clothingCard">
+        <div class="upload-card-header">
+          <div class="upload-card-icon-wrap clothing">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.57a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.57a2 2 0 00-1.34-2.23z"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Clothing Photo</h2>
+            <p>Flat lay, hanger, or worn — any angle works</p>
+          </div>
+        </div>
+        <div class="drop-zone" id="clothingZone">
+          <input type="file" id="clothingInput" accept="image/*" hidden />
+          <div class="drop-inner" id="clothingInner">
+            <div class="drop-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </div>
+            <p class="drop-label">Drag & drop or <span class="drop-link">browse files</span></p>
+            <p class="drop-hint">JPG · PNG · WEBP · max 15MB</p>
+          </div>
+          <div class="drop-preview hidden" id="clothingPreview">
+            <img id="clothingPreviewImg" src="" alt="Clothing" />
+            <button class="remove-btn" id="removeClothing" title="Remove">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="preview-badge">Clothing</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plus Divider -->
+      <div class="plus-divider">
+        <div class="plus-icon">+</div>
+      </div>
+
+      <!-- Person Upload -->
+      <div class="upload-card" id="personCard">
+        <div class="upload-card-header">
+          <div class="upload-card-icon-wrap person">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Your Photo</h2>
+            <p>Full-body or portrait — clear photo works best</p>
+          </div>
+        </div>
+        <div class="drop-zone" id="personZone">
+          <input type="file" id="personInput" accept="image/*" hidden />
+          <div class="drop-inner" id="personInner">
+            <div class="drop-icon-wrap">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </div>
+            <p class="drop-label">Drag & drop or <span class="drop-link">browse files</span></p>
+            <p class="drop-hint">JPG · PNG · WEBP · max 15MB</p>
+          </div>
+          <div class="drop-preview hidden" id="personPreview">
+            <img id="personPreviewImg" src="" alt="You" />
+            <button class="remove-btn" id="removePerson" title="Remove">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="preview-badge">Your photo</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NAME + GENERATE -->
+    <div class="generate-area">
+      <input type="text" id="userName" placeholder="Your name (optional)" maxlength="40" class="name-input" />
+      <button class="btn-generate" id="generateBtn" disabled>
+        <span class="btn-text" id="btnText">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Generate My Look
+        </span>
+        <span class="btn-spinner hidden" id="btnSpinner">
+          <svg viewBox="0 0 24 24" class="spin-icon" fill="none" stroke="currentColor" stroke-width="3">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="23.562">
+              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.9s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          Generating… ~30 seconds
+        </span>
+      </button>
+      <p class="generate-hint" id="generateHint">Upload both photos to continue</p>
+    </div>
+
+    <!-- FEATURES STRIP -->
+    <div class="features-strip">
+      <div class="feature-item">
+        <span class="feature-icon">⚡</span>
+        <span>Results in ~30s</span>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-item">
+        <span class="feature-icon">🎯</span>
+        <span>Hyper-realistic AI</span>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-item">
+        <span class="feature-icon">🔒</span>
+        <span>Photos stay private</span>
+      </div>
+      <div class="feature-divider"></div>
+      <div class="feature-item">
+        <span class="feature-icon">👗</span>
+        <span>Any style, any brand</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- RESULTS MODAL -->
+  <div class="modal-overlay hidden" id="resultsModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="modal-header">
+        <div class="modal-title-badge">✨ AI Generated</div>
+        <h2 class="modal-title">Your Virtual Try-On</h2>
+      </div>
+
+      <div class="results-row" id="resultsRow">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-share" id="shareBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+          Share to Gallery
+        </button>
+        <button class="btn-download" id="downloadBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download
+        </button>
+        <button class="btn-again" id="tryAgainBtn">Try another look →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GALLERY SECTION -->
+  <section class="gallery-section hidden" id="section-gallery">
+    <div class="gallery-header">
+      <h2>Community Gallery</h2>
+      <p>Real people, AI-styled in real outfits</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+    <div class="gallery-empty hidden" id="galleryEmpty">
+      <div class="gallery-empty-icon">📸</div>
+      <p>No posts yet — be the first!</p>
+      <button class="btn-primary" id="goToStudio">Go to Studio</button>
+    </div>
+  </section>
+
+  <!-- TOAST -->
+  <div class="toast hidden" id="toast"><span id="toastMsg"></span></div>
+
+  <footer class="site-footer">
+    <div class="footer-logo">WearNow<span class="logo-ai">.ai</span></div>
+    <p class="footer-made">made by <strong>Vuyolwethu</strong></p>
+    <p>AI-powered virtual try-on — see yourself in any outfit before you buy.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

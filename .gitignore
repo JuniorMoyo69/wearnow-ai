@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment — contains API keys, never commit this
+.env
+
+# User data — sensitive, stored in DB in production
+users.json
+
+# Local uploads — stored in Cloudinary in production
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
