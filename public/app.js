@@ -2,27 +2,6 @@
 
 const $ = id => document.getElementById(id);
 
-// ── AUTH CHECK ─────────────────────────────────
-(async () => {
-  try {
-    const res = await fetch('/api/auth/me');
-    if (!res.ok) { window.location.replace('/auth.html'); return; }
-    const { user } = await res.json();
-    const initial = user.username.charAt(0).toUpperCase();
-    $('userAvatar').textContent = initial;
-    $('userName_header').textContent = user.username;
-    $('userName').value = user.username;
-  } catch {
-    window.location.replace('/auth.html');
-  }
-})();
-
-// ── LOGOUT ────────────────────────────────────
-$('logoutBtn').addEventListener('click', async () => {
-  await fetch('/api/auth/logout', { method: 'POST' });
-  window.location.replace('/auth.html');
-});
-
 // ── STATE ──────────────────────────────────────
 const state = {
   clothingFile: null,
@@ -419,7 +398,8 @@ async function loadHistory() {
   historyEmpty.classList.add('hidden');
 
   try {
-    const res     = await fetch('/api/history');
+    const res = await fetch('/api/history');
+    if (res.status === 401) { window.location.replace('/auth.html'); return; }
     const entries = await res.json();
 
     if (!entries.length) {

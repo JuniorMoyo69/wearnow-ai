@@ -36,11 +36,6 @@
         <button class="nav-btn active" data-section="studio">Studio</button>
         <button class="nav-btn" data-section="history">My Looks</button>
       </nav>
-      <div class="header-user">
-        <div class="user-avatar" id="userAvatar"></div>
-        <span class="user-name" id="userName_header"></span>
-        <button class="btn-logout" id="logoutBtn">Sign out</button>
-      </div>
     </div>
   </header>
 
@@ -58,7 +53,7 @@
           AI-Powered Virtual Try-On
         </div>
         <h1>Try on any outfit<br /><span class="hero-gradient">before you buy it</span></h1>
-        <p>Upload any clothing item and a photo of yourself — our AI generates a realistic photo of you wearing it in seconds.</p>
+        <p>Upload any clothing item and a photo of yourself — our AI generates a realistic photo of you wearing it.</p>
         <div class="hero-steps">
           <div class="step">
             <div class="step-num">1</div>
@@ -276,8 +271,12 @@
         </div>
       </div>
 
+      <button class="btn-new-image" id="tryAgainBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5V1L7 6l5 5V7a6 6 0 11-6 6H3a9 9 0 109-9z"/></svg>
+        Generate New Image
+      </button>
       <div class="modal-actions">
-<button class="btn-share" id="shareBtn">
+        <button class="btn-share" id="shareBtn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
           Share
         </button>
@@ -285,7 +284,6 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
           Download
         </button>
-        <button class="btn-again" id="tryAgainBtn">Try another look →</button>
       </div>
     </div>
   </div>

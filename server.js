@@ -5,7 +5,6 @@ const https     = require('https');
 const http      = require('http');
 const cors      = require('cors');
 const session   = require('express-session');
-const bcrypt    = require('bcryptjs');
 const { v2: cloudinary } = require('cloudinary');
 const Replicate = require('replicate');
 const db        = require('./db');
@@ -39,10 +38,10 @@ app.use(express.json());
 app.use(session({
   secret:            process.env.SESSION_SECRET || 'wearnowai-dev-secret-change-in-production',
   resave:            false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     httpOnly: true,
-    maxAge:   7 * 24 * 60 * 60 * 1000,
+    maxAge:   30 * 24 * 60 * 60 * 1000,
     sameSite: 'lax',
     secure:   process.env.NODE_ENV === 'production'
   }
@@ -87,84 +86,10 @@ function toEntry(row) {
   };
 }
 
-// ── Auth middleware ───────────────────────────
-function requireAuth(req, res, next) {
-  if (req.session.userId) return next();
-  res.status(401).json({ error: 'Please sign in to continue.' });
-}
-
-// ── AUTH ROUTES ───────────────────────────────
-
-app.post('/api/auth/register', async (req, res) => {
-  const { username, email, password } = req.body;
-  if (!username || !email || !password)
-    return res.status(400).json({ error: 'All fields are required.' });
-  if (username.trim().length < 2)
-    return res.status(400).json({ error: 'Display name must be at least 2 characters.' });
-  if (password.length < 6)
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-
+// ── HISTORY (per session) ─────────────────────
+app.get('/api/history', async (req, res) => {
   try {
-    const existing = await db.findUserByEmail(email.toLowerCase().trim());
-    if (existing)
-      return res.status(400).json({ error: 'An account with that email already exists.' });
-
-    const hash = await bcrypt.hash(password, 12);
-    const user = await db.createUser({
-      username: username.trim(),
-      email:    email.toLowerCase().trim(),
-      password: hash
-    });
-
-    req.session.userId   = user.id;
-    req.session.username = user.username;
-    res.json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
-  } catch (err) {
-    console.error('Register error:', err.message);
-    res.status(500).json({ error: 'Registration failed. Please try again.' });
-  }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ error: 'Email and password are required.' });
-
-  try {
-    const user = await db.findUserByEmail(email.toLowerCase().trim());
-    if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ error: 'Invalid email or password.' });
-
-    req.session.userId   = user.id;
-    req.session.username = user.username;
-    res.json({ success: true, user: { id: user.id, email: user.email, username: user.username } });
-  } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ error: 'Login failed. Please try again.' });
-  }
-});
-
-app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy(() => res.json({ success: true }));
-});
-
-app.get('/api/auth/me', async (req, res) => {
-  if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated.' });
-  try {
-    const user = await db.findUserById(req.session.userId);
-    if (!user) return res.status(401).json({ error: 'User not found.' });
-    res.json({ user: { id: user.id, email: user.email, username: user.username } });
-  } catch {
-    res.status(401).json({ error: 'Not authenticated.' });
-  }
-});
-
-// ── HISTORY (per-user) ────────────────────────
-app.get('/api/history', requireAuth, async (req, res) => {
-  try {
-    const rows = await db.getUserHistory(req.session.userId);
+    const rows = await db.getUserHistory(req.session.id);
     res.json(rows.map(toEntry));
   } catch (err) {
     console.error('History error:', err.message);
@@ -173,26 +98,32 @@ app.get('/api/history', requireAuth, async (req, res) => {
 });
 
 // ── GENERATE ─────────────────────────────────
-app.post('/api/generate', requireAuth, upload.fields([
+app.post('/api/generate', upload.fields([
   { name: 'clothingPhoto', maxCount: 1 },
   { name: 'userPhoto',     maxCount: 1 }
 ]), async (req, res) => {
   try {
     const clothingFile = req.files?.clothingPhoto?.[0];
     const userFile     = req.files?.userPhoto?.[0];
-    const userName     = req.session.username || (req.body.userName || 'Anonymous').trim();
+    const userName     = (req.body.userName || 'Anonymous').trim();
 
     if (!clothingFile) return res.status(400).json({ error: 'Clothing photo is required' });
     if (!userFile)     return res.status(400).json({ error: 'Your photo is required' });
 
     const [userUpload, clothingUpload] = await Promise.all([
-      uploadToCloudinary(userFile.buffer),
-      uploadToCloudinary(clothingFile.buffer)
+      uploadToCloudinary(userFile.buffer, {
+        format: 'jpg',
+        transformation: [{ width: 1024, height: 1024, crop: 'limit' }]
+      }),
+      uploadToCloudinary(clothingFile.buffer, {
+        format: 'jpg',
+        transformation: [{ width: 1024, height: 1024, crop: 'pad', background: 'white' }]
+      })
     ]);
 
     if (!replicate) {
       const row = await db.createGalleryEntry({
-        userId:         req.session.userId,
+        sessionId:      req.session.id,
         userName,
         userPhoto:      userUpload.secure_url,
         clothingPhoto:  clothingUpload.secure_url,
@@ -232,7 +163,7 @@ app.post('/api/generate', requireAuth, upload.fields([
     const genUpload = await uploadToCloudinary(genBuffer);
 
     const row = await db.createGalleryEntry({
-      userId:         req.session.userId,
+      sessionId:      req.session.id,
       userName,
       userPhoto:      userUpload.secure_url,
       clothingPhoto:  clothingUpload.secure_url,

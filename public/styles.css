@@ -228,77 +228,11 @@ body {
   text-transform: lowercase;
 }
 
-.logo-name {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--black);
-  letter-spacing: -0.5px;
-}
-
 .logo-ai {
   background: var(--gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-.header-badge {
-  background: var(--purple-faint);
-  color: var(--purple);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 100px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  border: 1px solid rgba(124,58,237,0.15);
-}
-
-.header-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--gradient);
-  color: var(--white);
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--black);
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.btn-logout {
-  background: transparent;
-  border: 1.5px solid var(--border);
-  color: var(--mid);
-  font: 500 13px 'Inter', sans-serif;
-  padding: 6px 14px;
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-  transition: var(--ease);
-}
-.btn-logout:hover { border-color: var(--black); color: var(--black); }
-
-@media (max-width: 600px) {
-  .user-name { display: none; }
-  .header-badge { display: none; }
 }
 
 .header-nav { display: flex; gap: 4px; }
@@ -673,6 +607,34 @@ body {
 
 
 .generate-hint { font-size: 13px; color: var(--light); text-align: center; }
+
+.clothing-type-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.clothing-type-label { font-size: 13px; color: var(--light); white-space: nowrap; }
+.clothing-type-options { display: flex; gap: 8px; }
+.type-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--mid);
+  cursor: pointer;
+  padding: 6px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  transition: border-color var(--ease), color var(--ease), background var(--ease);
+}
+.type-option:has(input:checked) {
+  border-color: var(--purple-light);
+  color: var(--purple-light);
+  background: rgba(124,58,237,0.06);
+}
+.type-option input[type="radio"] { display: none; }
 
 /* ── PROGRESS BAR ────────────────────────────── */
 .progress-area {
@@ -1144,16 +1106,36 @@ body {
 .btn-download:hover { border-color: var(--black); background: var(--bg); }
 .btn-download:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.btn-again {
-  background: none;
+.btn-new-image {
+  width: 100%;
+  padding: 15px 24px;
+  background: var(--gradient);
+  color: var(--white);
   border: none;
-  color: var(--mid);
-  font: 500 13px 'Inter', sans-serif;
+  border-radius: var(--radius-sm);
+  font: 700 15px 'Inter', sans-serif;
   cursor: pointer;
-  transition: color var(--ease);
-  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  transition: transform var(--ease), box-shadow var(--ease), opacity var(--ease);
+  position: relative;
+  overflow: hidden;
 }
-.btn-again:hover { color: var(--black); }
+.btn-new-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background var(--ease);
+}
+.btn-new-image:hover::before { background: rgba(255,255,255,0.08); }
+.btn-new-image:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(124,58,237,0.38);
+}
 
 /* ── MY LOOKS HISTORY ────────────────────────── */
 .history-section {
@@ -1354,13 +1336,11 @@ body {
 
 /* ═══════════════════════════════════════════════
    RESPONSIVE — MOBILE  (≤ 600px)
-   (user-name + header-badge already hidden here)
 ═══════════════════════════════════════════════ */
 @media (max-width: 600px) {
   /* Header */
   .header-brand { display: none; }
   .logo-img { height: 36px; width: 36px; border-radius: 8px; }
-  .btn-logout { padding: 5px 12px; font-size: 12px; }
 
   /* Hero */
   .hero { padding: 52px 16px 48px; }
@@ -1374,7 +1354,6 @@ body {
   .modal-box { padding: 20px 14px; border-radius: var(--radius-sm); }
   .modal-title { font-size: 19px; }
   .modal-actions { flex-direction: column; align-items: stretch; }
-  .btn-again { margin-left: 0; text-align: center; padding: 10px; }
   .btn-share, .btn-download { justify-content: center; }
 
   /* History */
